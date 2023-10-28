@@ -1,6 +1,7 @@
 from tkinter import *
 from tkinter import messagebox
 import pyperclip
+import json
 # ---------------------------- PASSWORD GENERATOR ------------------------------- #
 
 import random
@@ -37,17 +38,55 @@ def save():
     mail = email_entry.get()
     passw = password_entry.get()
 
+    new_data = {
+        web: {
+            "email": mail,
+            "password": passw
+        }
+    }
+
     if len(web) < 1 or len(mail) < 0 or len(passw) < 0:
         messagebox.showinfo(title="Missing details", message="Please fill all the fields")
     else:
 
-        is_ok = messagebox.askokcancel(title="Confirm details", message=f"Email: {mail}\nPassword: {passw}")
-        if is_ok:
-            with open("data.txt", "a") as file:
-                file.write(f"{web}  |  {mail}  |  {passw}\n")
+        try:
+            with open("data.json", "r") as data_file:
+                # Reading the data
+                data = json.load(data_file)
+        except FileNotFoundError:
+            with open("data.json", "w") as data_file:
+                json.dump(new_data, data_file, indent=4)
+        else:
+            # Updating the data
+            data.update(new_data)
 
-                website_entry.delete(0, "end")
-                password_entry.delete(0, 'end')
+            with open("data.json", "w") as data_file:
+                json.dump(data, data_file, indent=4)
+        finally:
+            website_entry.delete(0, "end")
+            password_entry.delete(0, 'end')
+
+        # is_ok = messagebox.askokcancel(title="Confirm details", message=f"Email: {mail}\nPassword: {passw}")
+        # if is_ok:
+        #     with open("data.txt", "a") as file:
+        #         file.write(f"{web}  |  {mail}  |  {passw}\n")
+
+
+def find_password():
+    web = website_entry.get()
+    try:
+        with open("data.json", "r") as file:
+            data = json.load(file)
+    except FileNotFoundError:
+        messagebox.showinfo("Error", message="No data file found")
+        print("No data file found")
+    else:
+        if web in data:
+            credentials = data[web]
+            passw = credentials["password"]
+            messagebox.showinfo("Credentials", message=f"Website: {web}\nPassword: {passw}")
+        else:
+            messagebox.showinfo("Not Found", f"No details for {web} found")
 
 
 # ---------------------------- UI SETUP ------------------------------- #
@@ -63,7 +102,7 @@ canvas.grid(row=0, column=1)
 website = Label(text="Website:")
 website.grid(row=1, column=0)
 
-website_entry = Entry(width=35)
+website_entry = Entry(width=21)
 website_entry.focus()
 website_entry.grid(row=1, column=1, columnspan=2)
 
@@ -71,7 +110,7 @@ email = Label(text="Email/Username:")
 email.grid(row=2, column=0)
 
 email_entry = Entry(width=35)
-email_entry.insert(0, "user@gmail.com")
+email_entry.insert(0, "jessekimani21@gmail.com")
 email_entry.grid(row=2, column=1, columnspan=2)
 
 password_label = Label(text="Password:")
@@ -79,6 +118,9 @@ password_label.grid(row=3, column=0)
 
 password_entry = Entry(width=21)
 password_entry.grid(row=3, column=1)
+
+search = Button(text="Search", command=find_password)
+search.grid(row=1, column=2, columnspan=2)
 
 generate = Button(text="Generate Password", command=generate_password)
 generate.grid(row=3, column=2)
